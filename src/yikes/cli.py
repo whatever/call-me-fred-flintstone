@@ -1,6 +1,33 @@
 import argparse
 import boto3
 import json
+import os
+
+
+from aiohttp import web
+
+
+HERE = os.path.realpath(os.path.dirname(__file__))
+
+def webapp():
+
+    async def root_handler(request):
+        return web.FileResponse(f"{HERE}/static/index.html")
+
+    async def prompt_handler(request):
+        return web.Response(text="Hello, World")
+
+    app = web.Application()
+
+    app.add_routes([
+        web.get("/query", prompt_handler),
+        web.static("/", f"{HERE}/static"),
+        web.get("/", root_handler),
+    ])
+
+    return app
+
+
 
 
 def main():
@@ -12,6 +39,17 @@ def main():
     parser.add_argument("--max-gen-len", type=int, default=2**8)
     parser.add_argument("prompt", type=str)
     args = parser.parse_args()
+
+
+    app = webapp()
+
+    web.run_app(
+        app,
+        print=None,
+        port=8181,
+    )
+
+    return
 
     client = boto3.client("bedrock-runtime")
 
