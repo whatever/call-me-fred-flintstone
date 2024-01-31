@@ -1,6 +1,6 @@
-# :cake:
+# :cake: call me fred flintstone (i can make your bed rock)
 
-Not-really opinionated python project template
+non-sense project to start integrating bedrock stuff into a webapp
 
 
 ## Install
