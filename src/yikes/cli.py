@@ -9,6 +9,42 @@ from aiohttp import web
 
 HERE = os.path.realpath(os.path.dirname(__file__))
 
+
+def query_llama(prompt):
+
+    # print("AWS_ACCESS_KEY_ID", os.environ["AWS_ACCESS_KEY_ID"])
+    # print("AWS_SECRET_ACCESS_KEY", os.environ["AWS_SECRET_ACCESS_KEY"])
+
+    client = boto3.client("bedrock-runtime")
+
+    prompt = "\n".join([
+        "[INST]You are a coder[/INST]",
+        prompt,
+    ])
+
+    body = {
+        "prompt": prompt,
+        "temperature": 0.5,
+        "top_p": 0.9,
+        "max_gen_len": 2**8,
+    }
+
+    result = ""
+
+    resp = client.invoke_model_with_response_stream(
+        modelId="meta.llama2-13b-chat-v1",
+        body=json.dumps(body),
+    )
+
+    for event in resp["body"]:
+        chunk = event["chunk"]
+        chunk = chunk["bytes"].decode("utf-8")
+        chunk = json.loads(chunk)
+        result += chunk["generation"]
+
+    return result
+
+
 def webapp():
 
     async def root_handler(request):
@@ -18,13 +54,15 @@ def webapp():
         return web.Respose(text="Preview")
 
     async def query_handler(request):
-        return web.Response(text="query")
+        params = await request.json()
+        query = params["query"]
+        return web.Response(text=query_llama(query))
 
     app = web.Application()
 
     app.add_routes([
         web.get("/", root_handler),
-        web.get("/query", query_handler),
+        web.post("/query", query_handler),
         web.get("/preview", query_preview_handler),
         web.static("/", f"{HERE}/static"),
     ])
@@ -48,34 +86,10 @@ def main():
     app = webapp()
 
     web.run_app(
-        app,
-        print=None,
+        app, print=None,
         port=8181,
     )
 
     return
 
-    client = boto3.client("bedrock-runtime")
 
-    prompt = "\n".join([
-        "[INST]You are a coder[/INST]",
-        args.prompt,
-    ])
-
-    body = {
-        "prompt": prompt,
-        "temperature": 0.5,
-        "top_p": 0.9,
-        "max_gen_len": 2**8,
-    }
-
-    resp = client.invoke_model_with_response_stream(
-        modelId="meta.llama2-13b-chat-v1",
-        body=json.dumps(body),
-    )
-
-    for event in resp["body"]:
-        chunk = event["chunk"]
-        chunk = chunk["bytes"].decode("utf-8")
-        chunk = json.loads(chunk)
-        print(chunk["generation"], end="")

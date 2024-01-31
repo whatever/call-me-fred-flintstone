@@ -7,13 +7,39 @@
 
 
     <div>
-      <form>
+      <form id="submitter">
         <textarea cols="40" rows="14" name="query" id="query"></textarea>
         <textarea cols="40" rows="14" name="preview" id="preview"></textarea>
         <textarea cols="40" rows="14" name="response" id="response"></textarea>
         <br>
         <input type="submit" value="query the service /:">
       </form>
+      <script>
+
+        var submitter = document.getElementById("submitter");
+
+        submitter.addEventListener("submit", function (ev) {
+          ev.preventDefault();
+
+          var params = {
+            method: "POST",
+            body: JSON.stringify({
+              query: document.getElementById("query").value,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          };
+
+          fetch("/query", params).then(function (response) {
+            return response.text();
+          }).then(function (text) {
+            document.getElementById("response").value = text;
+          });
+          return false;
+        });
+
+      </script>
     </div>
   </body>
 </html>
