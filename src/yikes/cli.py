@@ -14,15 +14,19 @@ def webapp():
     async def root_handler(request):
         return web.FileResponse(f"{HERE}/static/index.html")
 
-    async def prompt_handler(request):
-        return web.Response(text="Hello, World")
+    async def query_preview_handler(request):
+        return web.Respose(text="Preview")
+
+    async def query_handler(request):
+        return web.Response(text="query")
 
     app = web.Application()
 
     app.add_routes([
-        web.get("/query", prompt_handler),
-        web.static("/", f"{HERE}/static"),
         web.get("/", root_handler),
+        web.get("/query", query_handler),
+        web.get("/preview", query_preview_handler),
+        web.static("/", f"{HERE}/static"),
     ])
 
     return app
