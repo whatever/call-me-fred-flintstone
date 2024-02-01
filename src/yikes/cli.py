@@ -12,9 +12,6 @@ HERE = os.path.realpath(os.path.dirname(__file__))
 
 def query_llama(prompt):
 
-    # print("AWS_ACCESS_KEY_ID", os.environ["AWS_ACCESS_KEY_ID"])
-    # print("AWS_SECRET_ACCESS_KEY", os.environ["AWS_SECRET_ACCESS_KEY"])
-
     client = boto3.client("bedrock-runtime")
 
     prompt = "\n".join([
@@ -73,23 +70,20 @@ def webapp():
 
 
 def main():
-    """You know..."""
+    """Serve website to query LLaMa"""
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--temperature", type=float, default=0.5)
-    parser.add_argument("--top-p", type=float, default=0.9)
-    parser.add_argument("--max-gen-len", type=int, default=2**8)
-    parser.add_argument("prompt", type=str)
+    parser.add_argument("--port", type=int, default=8181)
+    # parser.add_argument("--temperature", type=float, default=0.5)
+    # parser.add_argument("--top-p", type=float, default=0.9)
+    # parser.add_argument("--max-gen-len", type=int, default=2**8)
     args = parser.parse_args()
 
 
     app = webapp()
 
     web.run_app(
-        app, print=None,
-        port=8181,
+        app,
+        print=None,
+        port=args.port,
     )
-
-    return
-
-
