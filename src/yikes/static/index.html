@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="stylesheet" type="text/css" href="style.css">
   </head>
   <body>
-    <code>:/</code>
-
 
     <div>
+      <!--
       <form id="submitter">
         <textarea cols="40" rows="14" name="query" id="query"></textarea>
         <textarea cols="40" rows="14" name="preview" id="preview"></textarea>
@@ -14,31 +14,44 @@
         <br>
         <input type="submit" value="query the service /:">
       </form>
+      -->
+
+      <h1>Punch in a URL and scrape it (:</h1>
+      <form id="url-scraper">
+        <input type="text" name="url" id="url" placeholder="https://www.google.com" size="90">
+        <br>
+        <input type="submit" value="scrape the url (:" name="submitter" id="submitter">
+        <br>
+        <br>
+      </form>
+
+      <section>
+        <h1>Results</h1>
+
+        <textarea cols="120" rows="14" name="response" id="response"></textarea>
+        <div style="float: right;">
+          <div id="preview-title" id="preview-title"></div>
+          <img id="preview-image">
+          <div id="preview-description"></div>
+      </div>
+
       <script>
 
-        var submitter = document.getElementById("submitter");
-
-        submitter.addEventListener("submit", function (ev) {
+        var url_scraper = document.getElementById("url-scraper");
+        url_scraper.addEventListener("submit", function (ev) {
           ev.preventDefault();
-
-          var params = {
-            method: "POST",
-            body: JSON.stringify({
-              query: document.getElementById("query").value,
-            }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          };
-
-          fetch("/query", params).then(function (response) {
-            return response.text();
-          }).then(function (text) {
-            document.getElementById("response").value = text;
+          var url = document.getElementById("url").value;
+          url = encodeURIComponent(url);
+          fetch("/scrape?url=" + url).then(function(response) {
+            return response.json();
+          }).then(function(blob) {
+            var summary = blob["summary"];
+            document.getElementById("preview-image").src = blob["image"];
+            document.getElementById("preview-title").innerHTML = blob["title"];
+            document.getElementById("preview-description").innerHTML = blob["description"];
+            response.value = summary;
           });
-          return false;
         });
-
       </script>
     </div>
   </body>

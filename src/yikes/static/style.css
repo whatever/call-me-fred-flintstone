@@ -1,0 +1,8 @@
+body {
+  font-family: sans-serif;
+  font-size: 10pt;
+}
+
+#preview-image {
+  max-width: 300px
+}

@@ -5,25 +5,39 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def fetch_text_from_url(url):
-    """Return text from an HTML document"""
+def fetch(url):
+    """Return the HTML from a URL"""
 
     resp = requests.get(url)
+    return resp.text
 
-    resp = BeautifulSoup(resp.text, "html.parser")
+
+def extract_text_from_html(html):
+    """Return readable text from HTML"""
+
+    resp = BeautifulSoup(html, "html.parser")
 
     for script in resp(["script", "style"]):
         script.extract()
 
     text = resp.get_text()
 
-    lines = (line.strip() for line in text.splitlines())
+    lines = (
+        line.strip()
+        for line in text.splitlines()
+    )
 
-    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    chunks = (
+        phrase.strip()
+        for line in lines
+        for phrase in line.split("  ")
+    )
 
-    text = "\n".join(chunk for chunk in chunks if chunk)
-
-    return resp.get_text()
+    return "\n".join(
+        chunk
+        for chunk in chunks
+        if chunk
+    )
 
 
 def query_llama(prompt):
@@ -71,8 +85,8 @@ def query_jurassic(prompt):
 
     model_kwargs = { #AI21
         "prompt": prompt,
-        "maxTokens": 8000, 
-        "temperature": 0, 
+        "maxTokens": 2000, 
+        "temperature": 0.2, 
         "topP": 0.5, 
         "stopSequences": [], 
         "countPenalty": {"scale": 0 }, 
@@ -98,7 +112,31 @@ def query_jurassic(prompt):
     return result
 
 
+from collections import namedtuple
+
+Summarization = namedtuple(
+    "Summarization",
+    ["url", "title", "image", "summary"],
+)
+
+
 def summarize_url(url):
     """Return a text summary of a URL"""
-    text = fetch_text_from_url(url)
-    return query_jurassic(text[:10_000]).strip()
+
+    html = fetch(url)
+    text = extract_text_from_html(html)
+
+
+    soup = BeautifulSoup(html, "html.parser")
+    title = soup.find("meta", property="og:title")
+    image = soup.find("meta", property="og:image")
+    description = soup.find("meta", property="og:description")
+
+    return {
+        "url": url,
+        "title": title["content"] if title else "n/a",
+        "image": image["content"] if image else None,
+        "description": description["content"] if description else "n/a",
+        "summary": query_jurassic(text[:10_000]).strip(),
+    }
+

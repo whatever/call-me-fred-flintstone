@@ -4,48 +4,13 @@ import json
 import os
 
 
-from yikes.summarize import (
-    summarize_url,
-    fetch_text_from_url,
-)
+from yikes.summarize import summarize_url
 
 
 from aiohttp import web
 
 
 HERE = os.path.realpath(os.path.dirname(__file__))
-
-
-def query_llama(prompt):
-
-    client = boto3.client("bedrock-runtime")
-
-    prompt = "\n".join([
-        "[INST]You are a coder[/INST]",
-        prompt,
-    ])
-
-    body = {
-        "prompt": prompt,
-        "temperature": 0.5,
-        "top_p": 0.9,
-        "max_gen_len": 2**8,
-    }
-
-    result = ""
-
-    resp = client.invoke_model_with_response_stream(
-        modelId="meta.llama2-13b-chat-v1",
-        body=json.dumps(body),
-    )
-
-    for event in resp["body"]:
-        chunk = event["chunk"]
-        chunk = chunk["bytes"].decode("utf-8")
-        chunk = json.loads(chunk)
-        result += chunk["generation"]
-
-    return result
 
 
 def webapp():
@@ -61,10 +26,21 @@ def webapp():
         query = params["query"]
         return web.Response(text=query_llama(query))
 
+    async def url_preview_handler(request):
+        url = request.query.get("url")
+
+        if not url:
+            resp = {"error": "No URL provided"}
+        else:
+            resp = summarize_url(url)
+
+        return web.json_response(resp)
+
     app = web.Application()
 
     app.add_routes([
         web.get("/", root_handler),
+        web.get("/scrape", url_preview_handler),
         web.post("/query", query_handler),
         web.get("/preview", query_preview_handler),
         web.static("/", f"{HERE}/static"),
@@ -85,12 +61,9 @@ def main():
     # parser.add_argument("--max-gen-len", type=int, default=2**8)
     args = parser.parse_args()
 
-    url = "https://openai.com/research/building-an-early-warning-system-for-llm-aided-biological-threat-creation"
-
-    print(summarize_url(url))
-
-    return
-
+    # url = "https://openai.com/research/building-an-early-warning-system-for-llm-aided-biological-threat-creation"
+    # print(summarize_url(url))
+    # return
 
     app = webapp()
 
