@@ -38,6 +38,7 @@ def extract_text_from_html(html):
         chunk
         for chunk in chunks
         if chunk
+        if len(chunk) > len("Quanta Homepage") * 2
     )
 
 
