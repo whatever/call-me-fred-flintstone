@@ -27,12 +27,18 @@ def webapp():
         return web.Response(text=query_llama(query))
 
     async def url_preview_handler(request):
+        """Return a json response with a summary of the url"""
+
+        print("preview handler")
+
         url = request.query.get("url")
 
         if not url:
             resp = {"error": "No URL provided"}
         else:
             resp = summarize_url(url)
+
+        print("finished summarizing... responding")
 
         return web.json_response(resp)
 

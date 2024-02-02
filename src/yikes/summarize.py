@@ -1,5 +1,6 @@
 import boto3
 import json
+import logging
 import requests
 
 from bs4 import BeautifulSoup
@@ -40,54 +41,24 @@ def extract_text_from_html(html):
     )
 
 
-def query_llama(prompt):
-    """Return generated text from bedrock"""
-
-    client = boto3.client("bedrock-runtime")
-
-    prompt = "\n".join([
-        "[INST]Summarize this block of text:[/INST]",
-        prompt,
-    ])
-
-    body = {
-        "prompt": prompt,
-        "temperature": 0.9,
-        "top_p": 0.95,
-        "max_gen_len": 2**8,
-    }
-
-    resp = client.invoke_model_with_response_stream(
-        modelId="meta.llama2-13b-chat-v1",
-        body=json.dumps(body),
-    )
-
-    result = ""
-
-    for event in resp["body"]:
-        chunk = event["chunk"]
-        chunk = chunk["bytes"].decode("utf-8")
-        chunk = json.loads(chunk)
-        result += chunk["generation"]
-
-    return result
-
-
 def query_jurassic(prompt):
     """Return generated text from bedrock"""
 
     client = boto3.client("bedrock-runtime")
 
     prompt = "\n".join([
-        "{text}Summarize this block of text with 5 bullet points:{/text}",
+        # "{text}Summarize this block of text with 5 bullet points:{/text}",
+        # prompt,
+        "The following is text from a website:",
         prompt,
+        "Summarize the website with 5 bullet points:",
     ])
 
     model_kwargs = { #AI21
         "prompt": prompt,
-        "maxTokens": 2000, 
-        "temperature": 0.2, 
-        "topP": 0.5, 
+        "maxTokens": 3000, 
+        "temperature": 0.3, 
+        "topP": 0.7, 
         "stopSequences": [], 
         "countPenalty": {"scale": 0 }, 
         "presencePenalty": {"scale": 0 }, 
@@ -119,13 +90,23 @@ Summarization = namedtuple(
     ["url", "title", "image", "summary"],
 )
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 def summarize_url(url):
     """Return a text summary of a URL"""
 
+    logger.info("fetching %url", url)
     html = fetch(url)
+
+    print("extracting text from HTML")
     text = extract_text_from_html(html)
 
+    print("text is:", text)
+
+    print("summarizing text with bedrock")
+    summary = query_jurassic(text[:10_000]).strip()
 
     soup = BeautifulSoup(html, "html.parser")
     title = soup.find("meta", property="og:title")
@@ -137,6 +118,6 @@ def summarize_url(url):
         "title": title["content"] if title else "n/a",
         "image": image["content"] if image else None,
         "description": description["content"] if description else "n/a",
-        "summary": query_jurassic(text[:10_000]).strip(),
+        "summary": summary,
     }
 
