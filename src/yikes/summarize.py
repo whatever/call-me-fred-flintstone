@@ -38,7 +38,7 @@ def extract_text_from_html(html):
         chunk
         for chunk in chunks
         if chunk
-        if len(chunk) > len("Quanta Homepage") * 2
+        if len(chunk) > 30
     )
 
 
@@ -74,8 +74,6 @@ def query_jurassic(prompt):
     resp = resp["body"].read().decode("utf-8")
     resp = json.loads(resp)
 
-
-
     result = ""
 
     for chunk in resp["completions"]:
@@ -91,6 +89,7 @@ Summarization = namedtuple(
     ["url", "title", "image", "summary"],
 )
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -101,12 +100,10 @@ def summarize_url(url):
     logger.info("fetching %url", url)
     html = fetch(url)
 
-    print("extracting text from HTML")
+    logger.info("extracting text from HTML")
     text = extract_text_from_html(html)
 
-    print("text is:", text)
-
-    print("summarizing text with bedrock")
+    logger.info("summarizing text with bedrock")
     summary = query_jurassic(text[:10_000]).strip()
 
     soup = BeautifulSoup(html, "html.parser")
@@ -121,4 +118,3 @@ def summarize_url(url):
         "description": description["content"] if description else "n/a",
         "summary": summary,
     }
-

@@ -4,6 +4,7 @@ import json
 import os
 
 
+from yikes.embed import fuck_with_embedding
 from yikes.summarize import summarize_url
 
 
@@ -60,16 +61,18 @@ def webapp():
 def main():
     """Serve website to query LLaMa"""
 
+
+    fuck_with_embedding()
+
+
+    return
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8181)
     # parser.add_argument("--temperature", type=float, default=0.5)
     # parser.add_argument("--top-p", type=float, default=0.9)
     # parser.add_argument("--max-gen-len", type=int, default=2**8)
     args = parser.parse_args()
-
-    # url = "https://openai.com/research/building-an-early-warning-system-for-llm-aided-biological-threat-creation"
-    # print(summarize_url(url))
-    # return
 
     app = webapp()
 
