@@ -2,9 +2,10 @@ import argparse
 import boto3
 import json
 import os
+from x_x.cli import splash
 
 
-from yikes.embed import fuck_with_embedding
+from yikes.embed import mess_with_embedding
 from yikes.summarize import summarize_url
 
 
@@ -61,9 +62,9 @@ def webapp():
 def main():
     """Serve website to query LLaMa"""
 
+    print(splash("sword"))
 
-    fuck_with_embedding()
-
+    mess_with_embedding()
 
     return
 

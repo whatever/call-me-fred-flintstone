@@ -1,3 +1,7 @@
+import pdb
+
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+
 from langchain.chains import ConversationalRetrievalChain
 from langchain.indexes.vectorstore import VectorstoreIndexCreator
 from langchain.memory import ConversationBufferWindowMemory
@@ -45,9 +49,19 @@ def get_llm():
         "frequencyPenalty": {"scale": 0 },
      }
 
+    model_kwargs = { #Meta
+        "temperature": 0,
+        "top_p": 0.5,
+        "max_gen_len": 2**7,
+    }
+
     return Bedrock(
-        model_id="ai21.j2-ultra-v1",
+        # model_id="ai21.j2-ultra-v1",
+        # model_id="meta.llama2-70b-v1",
+        model_id="meta.llama2-70b-chat-v1",
         model_kwargs=model_kwargs,
+        # streaming=True,
+        # callbacks=[StreamingStdOutCallbackHandler()],
     )
 
 
@@ -87,11 +101,28 @@ def get_memory():
 
 
 def MUTATE_invoke_model(client):
+    """
+    Modify the boto3 client to print out the prompt and response.
+    NOTE: This is a hacky way to do this. It would be better if we coulduse a callback handler passed into Bedrock...
+    """
     def inspect_boto_calls(*args, **kwargs):
         body = kwargs["body"]
         body = json.loads(body)
+        print_aside(kwargs["modelId"])
         print_aside(body["prompt"])
-        return client.__invoke_model(*args, **kwargs)
+
+        resp = client.__invoke_model(*args, **kwargs)
+        resp_body = resp["body"].read()
+        resp["body"].read = mock.MagicMock(return_value=resp_body)
+
+        try:
+            r = json.loads(resp_body.decode("utf8"))["generation"]
+            # r = json.loads(resp_body.decode("utf-8"))["completions"][0]["data"]["text"]
+            print_aside(r)
+        except:
+            print_aside(resp_body)
+
+        return resp # client.__invoke_model(*args, **kwargs)
     client.__invoke_model = client.invoke_model
     client.invoke_model = inspect_boto_calls
 
@@ -109,6 +140,11 @@ def get_rag_chat_response(input_text, memory, index):
 
     llm = get_llm()
 
+def get_rag_chat_response(input_text, memory, index):
+
+    llm = get_llm()
+
+    # Modify the llm's boto3 client to print out the prompt and response
     MUTATE_invoke_model(llm.client)
 
     conversation_with_retrieval = ConversationalRetrievalChain.from_llm(
@@ -122,7 +158,15 @@ def get_rag_chat_response(input_text, memory, index):
     return chat_response
 
 
-def fuck_with_embedding():
+def mess_with_embedding():
+
+
+    """
+    bedrock = boto3.client(service_name='bedrock', region_name='us-east-1')
+    listModels = bedrock.list_foundation_models(byProvider='meta')
+    print(json.dumps(listModels, indent=2))
+    return
+    """
 
     mem = get_memory()
 
@@ -130,9 +174,8 @@ def fuck_with_embedding():
 
     try:
         while True:
-            line = input("> ").strip()
-
-            print("\033]0m", end="")
+            print("\033[31m>\033[0m", end="", flush=True)
+            line = input(" ").strip()
 
             if not line:
                 continue
